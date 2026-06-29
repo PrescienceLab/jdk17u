@@ -43,7 +43,7 @@
 #elif defined(arm)
 #include <asm/ptrace.h>
 #define user_regs_struct  pt_regs
-#elif defined(riscv64)
+#elif defined(riscv64) || defined(raftv64)
 #include <asm/ptrace.h>
 #endif
 

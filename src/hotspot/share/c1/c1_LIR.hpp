@@ -869,7 +869,7 @@ class    LIR_Op2;
 class    LIR_OpDelay;
 class    LIR_Op3;
 class      LIR_OpAllocArray;
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
 class    LIR_Op4;
 #endif
 class    LIR_OpCall;
@@ -917,7 +917,7 @@ enum LIR_Code {
       , lir_null_check
       , lir_return
       , lir_leal
-#ifndef RISCV
+#if !(defined(RISCV) || defined(RAFTV))
       , lir_branch
       , lir_cond_float_branch
 #endif
@@ -931,7 +931,7 @@ enum LIR_Code {
       , lir_load_klass
   , end_op1
   , begin_op2
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
       , lir_branch
       , lir_cond_float_branch
 #endif
@@ -939,7 +939,7 @@ enum LIR_Code {
       , lir_cmp_l2i
       , lir_ucmp_fd2i
       , lir_cmp_fd2i
-#ifndef RISCV
+#if !(defined(RISCV) || defined(RAFTV))
       , lir_cmove
 #endif
       , lir_add
@@ -969,7 +969,7 @@ enum LIR_Code {
       , lir_fmad
       , lir_fmaf
   , end_op3
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   , begin_op4
       , lir_cmove
   , end_op4
@@ -1010,7 +1010,7 @@ enum LIR_Code {
   , begin_opAssert
     , lir_assert
   , end_opAssert
-#if defined(RISCV) && defined(INCLUDE_ZGC)
+#if (defined(RISCV) || defined(RAFTV)) && defined(INCLUDE_ZGC)
   , begin_opZLoadBarrierTest
     , lir_zloadbarrier_test
   , end_opZLoadBarrierTest
@@ -1151,7 +1151,7 @@ class LIR_Op: public CompilationResourceObj {
   virtual LIR_Op1* as_Op1() { return NULL; }
   virtual LIR_Op2* as_Op2() { return NULL; }
   virtual LIR_Op3* as_Op3() { return NULL; }
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   virtual LIR_Op4* as_Op4() { return NULL; }
 #endif
   virtual LIR_OpArrayCopy* as_OpArrayCopy() { return NULL; }
@@ -1610,7 +1610,8 @@ class LIR_Op2: public LIR_Op {
     , _tmp4(LIR_OprFact::illegalOpr)
     , _tmp5(LIR_OprFact::illegalOpr)
     , _condition(condition) {
-    assert(code == lir_cmp || code == lir_assert RISCV_ONLY(|| code == lir_branch || code == lir_cond_float_branch), "code check");
+    assert(code == lir_cmp || code == lir_assert RISCV_ONLY(|| code == lir_branch || code == lir_cond_float_branch) 
+		                                 RAFTV_ONLY(|| code == lir_branch || code == lir_cond_float_branch), "code check");
   }
 
   LIR_Op2(LIR_Code code, LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2, LIR_Opr result, BasicType type)
@@ -1642,7 +1643,8 @@ class LIR_Op2: public LIR_Op {
     , _tmp4(LIR_OprFact::illegalOpr)
     , _tmp5(LIR_OprFact::illegalOpr)
     , _condition(lir_cond_unknown) {
-    assert(code != lir_cmp && RISCV_ONLY(code != lir_branch && code != lir_cond_float_branch &&) is_in_range(code, begin_op2, end_op2), "code check");
+    assert(code != lir_cmp && RISCV_ONLY(code != lir_branch && code != lir_cond_float_branch &&)
+		              RAFTV_ONLY(code != lir_branch && code != lir_cond_float_branch &&) is_in_range(code, begin_op2, end_op2), "code check");
   }
 
   LIR_Op2(LIR_Code code, LIR_Opr opr1, LIR_Opr opr2, LIR_Opr result, LIR_Opr tmp1, LIR_Opr tmp2 = LIR_OprFact::illegalOpr,
@@ -1658,7 +1660,8 @@ class LIR_Op2: public LIR_Op {
     , _tmp4(tmp4)
     , _tmp5(tmp5)
     , _condition(lir_cond_unknown) {
-    assert(code != lir_cmp && RISCV_ONLY(code != lir_branch && code != lir_cond_float_branch &&) is_in_range(code, begin_op2, end_op2), "code check");
+    assert(code != lir_cmp && RISCV_ONLY(code != lir_branch && code != lir_cond_float_branch &&)
+		              RAFTV_ONLY(code != lir_branch && code != lir_cond_float_branch &&) is_in_range(code, begin_op2, end_op2), "code check");
   }
 
   LIR_Opr in_opr1() const                        { return _opr1; }
@@ -1670,14 +1673,14 @@ class LIR_Op2: public LIR_Op {
   LIR_Opr tmp4_opr() const                       { return _tmp4; }
   LIR_Opr tmp5_opr() const                       { return _tmp5; }
   LIR_Condition condition() const  {
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
     assert(code() == lir_cmp || code() == lir_branch || code() == lir_cond_float_branch || code() == lir_assert, "only valid for branch and assert"); return _condition;
 #else
     assert(code() == lir_cmp || code() == lir_cmove || code() == lir_assert, "only valid for cmp and cmove and assert"); return _condition;
 #endif
   }
   void set_condition(LIR_Condition condition) {
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
     assert(code() == lir_cmp || code() == lir_branch || code() == lir_cond_float_branch, "only valid for branch"); _condition = condition;
 #else
     assert(code() == lir_cmp || code() == lir_cmove, "only valid for cmp and cmove");  _condition = condition;
@@ -1695,7 +1698,7 @@ class LIR_Op2: public LIR_Op {
   virtual void print_instr(outputStream* out) const PRODUCT_RETURN;
 };
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
 class LIR_OpBranch: public LIR_Op2 {
 #else
 class LIR_OpBranch: public LIR_Op {
@@ -1703,7 +1706,7 @@ class LIR_OpBranch: public LIR_Op {
  friend class LIR_OpVisitState;
 
  private:
-#ifndef RISCV
+#if !(defined(RISCV) || defined(RAFTV))
   LIR_Condition _cond;
 #endif
   Label*        _label;
@@ -1713,7 +1716,7 @@ class LIR_OpBranch: public LIR_Op {
 
  public:
   LIR_OpBranch(LIR_Condition cond, Label* lbl)
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
     : LIR_Op2(lir_branch, cond, LIR_OprFact::illegalOpr, LIR_OprFact::illegalOpr, (CodeEmitInfo*) NULL)
 #else
     : LIR_Op(lir_branch, LIR_OprFact::illegalOpr, (CodeEmitInfo*) NULL)
@@ -1730,7 +1733,7 @@ class LIR_OpBranch: public LIR_Op {
   // for unordered comparisons
   LIR_OpBranch(LIR_Condition cond, BlockBegin* block, BlockBegin* ublock);
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   LIR_Condition cond()        const              { return condition();  }
   void set_cond(LIR_Condition cond)              { set_condition(cond); }
 #else
@@ -1814,7 +1817,7 @@ class LIR_Op3: public LIR_Op {
   virtual void print_instr(outputStream* out) const PRODUCT_RETURN;
 };
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
 class LIR_Op4: public LIR_Op {
   friend class LIR_OpVisitState;
  protected:
@@ -2112,7 +2115,7 @@ class LIR_List: public CompilationResourceObj {
   const char *  _file;
   int           _line;
 #endif
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   LIR_Opr       _cmp_opr1;
   LIR_Opr       _cmp_opr2;
 #endif
@@ -2128,7 +2131,7 @@ class LIR_List: public CompilationResourceObj {
     }
 #endif // PRODUCT
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
     set_cmp_oprs(op);
     // lir_cmp set cmp oprs only on riscv
     if (op->code() == lir_cmp) return;
@@ -2150,7 +2153,7 @@ class LIR_List: public CompilationResourceObj {
   void set_file_and_line(const char * file, int line);
 #endif
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   void set_cmp_oprs(LIR_Op* op);
 #endif
 
@@ -2273,7 +2276,7 @@ class LIR_List: public CompilationResourceObj {
   void cmp_mem_int(LIR_Condition condition, LIR_Opr base, int disp, int c, CodeEmitInfo* info);
   void cmp_reg_mem(LIR_Condition condition, LIR_Opr reg, LIR_Address* addr, CodeEmitInfo* info);
 
-#ifdef RISCV
+#if defined(RISCV) || defined(RAFTV)
   void cmove(LIR_Condition condition, LIR_Opr src1, LIR_Opr src2, LIR_Opr dst, BasicType type,
              LIR_Opr cmp_opr1 = LIR_OprFact::illegalOpr, LIR_Opr cmp_opr2 = LIR_OprFact::illegalOpr) {
     append(new LIR_Op4(lir_cmove, condition, src1, src2, cmp_opr1, cmp_opr2, dst, type));

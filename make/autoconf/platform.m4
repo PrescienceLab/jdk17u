@@ -132,6 +132,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU],
       VAR_CPU_BITS=64
       VAR_CPU_ENDIAN=little
       ;;
+    raftv64)
+      VAR_CPU=raftv64
+      VAR_CPU_ARCH=raftv
+      VAR_CPU_BITS=64
+      VAR_CPU_ENDIAN=little
+      ;;
     s390)
       VAR_CPU=s390
       VAR_CPU_ARCH=s390

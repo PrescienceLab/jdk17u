@@ -579,6 +579,32 @@
 #define NOT_RISCV64(code) code
 #endif
 
+#if defined(RAFTV32) || defined(RAFTV64)
+#define RAFTV
+#define RAFTV_ONLY(code) code
+#define NOT_RAFTV(code)
+#else
+#undef RAFTV
+#define RAFTV_ONLY(code)
+#define NOT_RAFTV(code) code
+#endif
+
+#ifdef RAFTV32
+#define RAFTV32_ONLY(code) code
+#define NOT_RAFTV32(code)
+#else
+#define RAFTV32_ONLY(code)
+#define NOT_RAFTV32(code) code
+#endif
+
+#ifdef RAFTV64
+#define RAFTV64_ONLY(code) code
+#define NOT_RAFTV64(code)
+#else
+#define RAFTV64_ONLY(code)
+#define NOT_RAFTV64(code) code
+#endif
+
 #ifdef VM_LITTLE_ENDIAN
 #define LITTLE_ENDIAN_ONLY(code) code
 #define BIG_ENDIAN_ONLY(code)

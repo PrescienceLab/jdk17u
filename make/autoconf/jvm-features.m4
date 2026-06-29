@@ -312,6 +312,7 @@ AC_DEFUN_ONCE([JVM_FEATURES_CHECK_SHENANDOAHGC],
     if test "x$OPENJDK_TARGET_CPU_ARCH" = "xx86" || \
         test "x$OPENJDK_TARGET_CPU" = "xaarch64" || \
         test "x$OPENJDK_TARGET_CPU" = "xppc64le" || \
+        test "x$OPENJDK_TARGET_CPU" = "xraftv64"   || \
         test "x$OPENJDK_TARGET_CPU" = "xriscv64"; then
       AC_MSG_RESULT([yes])
     else
