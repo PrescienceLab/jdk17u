@@ -96,6 +96,7 @@
   LOG_TAG(jni) \
   LOG_TAG(jvmci) \
   LOG_TAG(jvmti) \
+  LOG_TAG(kbe) \
   LOG_TAG(lambda) \
   LOG_TAG(library) \
   LOG_TAG(liveness) \
