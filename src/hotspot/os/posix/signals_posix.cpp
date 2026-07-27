@@ -25,7 +25,6 @@
 #include "precompiled.hpp"
 
 #include "jvm.h"
-#include "kbe.h"
 #include "logging/log.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/globals.hpp"
@@ -37,7 +36,6 @@
 #include "runtime/semaphore.inline.hpp"
 #include "runtime/thread.hpp"
 #include "signals_posix.hpp"
-#include "traps.h"
 #include "utilities/events.hpp"
 #include "utilities/ostream.hpp"
 #include "utilities/vmError.hpp"
@@ -1187,63 +1185,6 @@ int os::get_signal_number(const char* signal_name) {
     }
   }
   return -1;
-}
-
-// FIXME: Find proper way to determine number of integer registers for RAFT-V!
-#define NUM_INT_REGS 32
-
-/* This is a little shim between the "raw" info KBEs gives us and the entirety
- * of the signal information that is currently expected. */
-extern "C" {
-void javaSignalHandler_kbeShim(unsigned cause, __u64 fault_vaddr, __u64 gregs[NUM_INT_REGS]) {
-  siginfo_t fake_siginfo = {0};
-  fake_siginfo.si_code = cause;
-
-  ucontext_t fake_ucontext = {0};
-  for (unsigned i = 0; i < NUM_INT_REGS; i++) {
-    fake_ucontext.uc_mcontext.__gregs[i] = gregs[i];
-  }
-
-  javaSignalHandler(cause, &fake_siginfo, (void*)&fake_ucontext);
-};
-
-#define KERNEL_BYPASS_FILE "/dev/kernel-bypass"
-static int kbe_fd = -1;
-extern void kbe_handler_entry(void);
-
-void set_kbe_handler(int sig) {
-  /* FIXME?: Perhaps opening the KBE file should go in os::Posix::init2()? */
-  if (kbe_fd == -1) {
-    /* KBE file is not backed by media, so sync is not important. We specify it
-     * as a hint to the kernel though. */
-    kbe_fd = open(KERNEL_BYPASS_FILE, O_RDWR | O_SYNC | O_DSYNC);
-    if (kbe_fd < 0) {
-      log_error(kbe)("Could not open KBE cdev file " KERNEL_BYPASS_FILE);
-      fatal("Could not open KBE cdev file " KERNEL_BYPASS_FILE);
-    }
-  }
-
-  // We currently do NOT check for overwriting signal handlers nor chaining
-  // them!
-  // TODO: Is this important for our KBE evaluation?
-
-  __u64 handler_vaddr = (__u64)&kbe_handler_entry;
-  int rc = ioctl(kbe_fd, KERNEL_BYPASS_INSTALL_HANDLER_TARGET, handler_vaddr);
-  if (rc != 0) {
-    log_error(kbe)("Could not install KBE handler virtual address");
-    fatal("Could not install KBE handler virtual address");
-  }
-
-  struct delegate_config_t kbe_enable = {
-    .en_flag = 1,
-    .trap_mask = (1UL << EXC_LOAD_PAGE_FAULT),
-  };
-  rc = ioctl(kbe_fd, KERNEL_BYPASS_DELEGATE_TRAPS, &kbe_enable);
-  if (rc != 0) {
-    log_error(kbe)("Could not enable KBE delegation for page faults");
-    fatal("Could not enable KBE delegation for page faults");
-  }
-}
 }
 
 void set_signal_handler(int sig) {
