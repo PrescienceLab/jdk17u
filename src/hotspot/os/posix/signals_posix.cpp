@@ -653,7 +653,7 @@ int JVM_HANDLE_XXX_SIGNAL(int sig, siginfo_t* info,
 }
 
 // Entry point for the hotspot signal handler.
-static void javaSignalHandler(int sig, siginfo_t* info, void* ucVoid) {
+void javaSignalHandler(int sig, siginfo_t* info, void* ucVoid) {
   // Do not add any code here!
   // Only add code to either JVM_HANDLE_XXX_SIGNAL or PosixSignals::pd_hotspot_signal_handler.
   (void)JVM_HANDLE_XXX_SIGNAL(sig, info, ucVoid, true);

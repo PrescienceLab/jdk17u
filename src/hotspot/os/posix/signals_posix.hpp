@@ -63,4 +63,6 @@ public:
   static void unblock_error_signals();
 };
 
+void javaSignalHandler(int sig, siginfo_t* info, void* ucVoid);
+
 #endif // OS_POSIX_SIGNALS_POSIX_HPP
