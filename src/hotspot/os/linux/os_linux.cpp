@@ -4611,6 +4611,10 @@ jint os::init_2(void) {
     return JNI_ERR;
   }
 
+#if defined(RAFTV)
+  Linux::set_kbe_handler(SIGSEGV);
+#endif
+
   // Check and sets minimum stack sizes against command line options
   if (Posix::set_minimum_stack_sizes() == JNI_ERR) {
     return JNI_ERR;

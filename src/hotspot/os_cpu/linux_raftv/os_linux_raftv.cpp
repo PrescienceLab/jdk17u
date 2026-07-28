@@ -58,6 +58,7 @@
 // put OS-includes here
 # include <dlfcn.h>
 # include <fpu_control.h>
+# include <fcntl.h>
 # include <errno.h>
 # include <pthread.h>
 # include <signal.h>
@@ -499,12 +500,12 @@ extern "C" {
   static int kbe_fd = -1;
   extern void kbe_handler_entry(void);
 
-  void set_kbe_handler(int sig) {
+  void os::Linux::set_kbe_handler(int sig) {
     /* FIXME?: Perhaps opening the KBE file should go in os::Posix::init2()? */
     if (kbe_fd == -1) {
       /* KBE file is not backed by media, so sync is not important. We specify it
        * as a hint to the kernel though. */
-      kbe_fd = open(KERNEL_BYPASS_FILE, O_RDWR | O_SYNC | O_DSYNC);
+      kbe_fd = ::open(KERNEL_BYPASS_FILE, O_RDWR | O_SYNC | O_DSYNC);
       if (kbe_fd < 0) {
         log_error(kbe)("Could not open KBE cdev file " KERNEL_BYPASS_FILE);
         fatal("Could not open KBE cdev file " KERNEL_BYPASS_FILE);

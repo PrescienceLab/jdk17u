@@ -132,6 +132,10 @@ class Linux {
   static intptr_t* ucontext_get_sp(const ucontext_t* uc);
   static intptr_t* ucontext_get_fp(const ucontext_t* uc);
 
+#if defined(RAFTV)
+  static void set_kbe_handler(int sig);
+#endif
+
   // GNU libc and libpthread version strings
   static const char *libc_version()           { return _libc_version; }
   static const char *libpthread_version()     { return _libpthread_version; }

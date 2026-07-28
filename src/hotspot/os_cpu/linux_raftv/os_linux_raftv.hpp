@@ -37,4 +37,6 @@
     *(jlong *) dst = *(const jlong *) src;
   }
 
+void set_kbe_handler(int sig);
+
 #endif // OS_CPU_LINUX_RISCV_VM_OS_LINUX_RISCV_HPP
