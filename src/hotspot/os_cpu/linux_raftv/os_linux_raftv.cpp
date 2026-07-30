@@ -525,7 +525,8 @@ extern "C" {
 
     struct delegate_config_t kbe_enable = {
       .en_flag = 1,
-      .trap_mask = (1UL << EXC_LOAD_PAGE_FAULT),
+      .trap_mask = (1UL << EXC_FETCH_PAGE_FAULT) | (1UL << EXC_LOAD_PAGE_FAULT) |
+                   (1UL << EXC_STORE_PAGE_FAULT),
     };
     rc = ioctl(kbe_fd, KERNEL_BYPASS_DELEGATE_TRAPS, &kbe_enable);
     if (rc != 0) {
