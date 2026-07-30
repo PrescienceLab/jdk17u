@@ -41,8 +41,10 @@ int ioctl_csr_status(void);
 
 /** Getting KBE'd page faults back into the kernel. */
 
+enum page_fault_kind_t { CODE, LOAD, STORE };
+
 struct kbe_page_fault_t {
-    enum page_fault_kind { CODE, LOAD, STORE } kind;
+    enum page_fault_kind_t kind;
     /* The virtual address that triggered the page fault.
      *
      * NOTE: This is NOT the address of the instruction that caused the page

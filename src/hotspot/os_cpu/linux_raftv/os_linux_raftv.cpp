@@ -480,7 +480,11 @@ extern "C" {
   }
 
   // FIXME: Find proper way to determine number of integer registers for RAFT-V!
-  #define NUM_INT_REGS 32
+#define NUM_INT_REGS 32
+
+#define KERNEL_BYPASS_FILE "/dev/kernel-bypass"
+  static int kbe_fd = -1;
+  extern void kbe_handler_entry(void);
 
   /* This is a little shim between the "raw" info KBEs gives us and the entirety
    * of the signal information that is currently expected. */
@@ -493,12 +497,39 @@ extern "C" {
       fake_ucontext.uc_mcontext.__gregs[i] = gregs[i];
     }
 
-    javaSignalHandler(cause, &fake_siginfo, (void*)&fake_ucontext);
-  };
+    /* Send the KBE back to the kernel as a KBE page fault request. Because the
+     * kernel handles page fault requests through the EXACT SAME PATH as a page
+     * fault that was delivered directly to the kernel, we will still get a
+     * signal back to us. Since we installed the signal handler, this will work
+     * fine. The KBE will be prioritized because it is the lowest privilege mode
+     * that is eligible to receive this exception. */
+    enum page_fault_kind_t kind;
+    switch (cause) {
+    case EXC_FETCH_PAGE_FAULT:
+        kind = CODE;
+        break;
+    case EXC_LOAD_PAGE_FAULT:
+        kind = LOAD;
+        break;
+    case EXC_STORE_PAGE_FAULT:
+        kind = STORE;
+        break;
+    default:
+        fatal("Unknown KBE cause!");
+        __builtin_unreachable();
+        break;
+    }
 
-#define KERNEL_BYPASS_FILE "/dev/kernel-bypass"
-  static int kbe_fd = -1;
-  extern void kbe_handler_entry(void);
+    /* TODO: Refactor CSR-reading out to a function or something. */
+    uint64_t page_fault_vaddr = -1;
+    asm volatile("csrr %0, 0x843\n\t" : "=r" (page_fault_vaddr));
+    // const uint64_t fault_vaddr = csr_read(CSR_UTVAL);
+    struct kbe_page_fault_t req = {
+        .kind = kind,
+        .fault_vaddr = page_fault_vaddr,
+    };
+    int rc = ioctl(kbe_fd, KERNEL_BYPASS_HANDLE_PAGE_FAULT, &req);
+  };
 
   void os::Linux::set_kbe_handler(int sig) {
     /* FIXME?: Perhaps opening the KBE file should go in os::Posix::init2()? */

@@ -1263,9 +1263,7 @@ void install_signal_handlers() {
     (*begin_signal_setting)();
   }
 
-#if !defined(RAFTV)
   set_signal_handler(SIGSEGV);
-#endif
   set_signal_handler(SIGPIPE);
   set_signal_handler(SIGBUS);
   set_signal_handler(SIGILL);
