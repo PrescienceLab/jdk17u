@@ -34,12 +34,32 @@
 
   .global kbe_handler_entry
   .align 2
+  .type kbe_handler_entry, @function
 kbe_handler_entry:
+  .cfi_startproc
   /* NOTE: This rdcycle should NOT be in the final handler implementation. We
    * only need it here for timing the inst->handler->next-inst sequence. */
   // CYCLES_TO_USCRATCH
 
   addi sp, sp, -272
+  .cfi_adjust_cfa_offset 272
+  // CFA pointing to BASE (LOWEST ADDRESS) of the stack entry.
+
+  /* Saved in setup for frame pointer walking in GDB. */
+  SREG ra, 33*REGBYTES(sp)
+  SREG fp, 32*REGBYTES(sp) /* NOTE: $fp = $s0 = $x8 */
+
+  .cfi_offset ra, -264 // -33*REGBYTES(sp)
+  .cfi_offset fp, -256 // -32*REGBYTES(sp)
+
+  /* We need to move this frame pointer to point to the base of OUR "call frame"
+   * when using -fno-omit-frame-pointer to make things behave correctly in later
+   * C code. However, we should NOT expose this modified fp to the KBE handler
+   * as that will not line up with the ucontext's expected GREGs contents. So we
+   * save the fp register early and then move it for later C code. */
+  SREG fp, 8*REGBYTES(sp)
+  addi fp, sp, 272 /* $fp = $s0 = $x8 */
+  .cfi_def_cfa fp, 0
 
   SREG x1, 1*REGBYTES(sp)
   SREG x2, 2*REGBYTES(sp)
@@ -48,7 +68,7 @@ kbe_handler_entry:
   SREG x5, 5*REGBYTES(sp)
   SREG x6, 6*REGBYTES(sp)
   SREG x7, 7*REGBYTES(sp)
-  SREG x8, 8*REGBYTES(sp)
+  // SREG x8, 8*REGBYTES(sp) // Saved earlier for frame pointer reasons
   SREG x9, 9*REGBYTES(sp)
   SREG x10, 10*REGBYTES(sp)
   SREG x11, 11*REGBYTES(sp)
@@ -85,20 +105,30 @@ kbe_handler_entry:
 
   csrr a0, 0x842 // ucause
   mv a2, sp
-  // Relocation truncated this.
-  // FIXME: Switch to la+jalr?
+  /* Relocations in the compiler and linker required us to switch to a lr+jalr
+   * setup. */
   la ra, javaSignalHandler_kbeShim
   jalr ra, ra, 0
   csrw 0x841 /* uepc */, a0
 
-  LREG x1, 1*REGBYTES(sp)
+  /* XXX: We do NOT restore the ra & fp we saved on the stack! We want the
+   * modifications the user made to the mcontext's GREGs to show up in the
+   * core upon returning, so we just deallocate those values by popping the
+   * stack frame.
+   *
+   * We also do NOT do anything to move the fp <- sp + 272 because we saved the
+   * original version of fp before we did that movement. */
+
+  LREG x1, 1*REGBYTES(sp) // ra
+  .cfi_restore ra
   LREG x2, 2*REGBYTES(sp)
   LREG x3, 3*REGBYTES(sp)
   LREG x4, 4*REGBYTES(sp)
   LREG x5, 5*REGBYTES(sp)
   LREG x6, 6*REGBYTES(sp)
   LREG x7, 7*REGBYTES(sp)
-  LREG x8, 8*REGBYTES(sp)
+  LREG x8, 8*REGBYTES(sp) // fp/s0
+  .cfi_restore fp
   LREG x9, 9*REGBYTES(sp)
   LREG x10, 10*REGBYTES(sp)
   LREG x11, 11*REGBYTES(sp)
@@ -124,6 +154,7 @@ kbe_handler_entry:
   LREG x31, 31*REGBYTES(sp)
 
   addi sp, sp, 272
+  .cfi_def_cfa sp, 0
 
   /* Like at the start of this ASM procedure, we capture the time we leave this
    * handler right before we execute the URET, so that we can measure the time
@@ -131,3 +162,4 @@ kbe_handler_entry:
   // CYCLES_TO_USCRATCH
 
   uret
+  .cfi_endproc
