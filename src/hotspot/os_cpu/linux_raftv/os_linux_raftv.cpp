@@ -488,7 +488,7 @@ extern "C" {
 
   /* This is a little shim between the "raw" info KBEs gives us and the entirety
    * of the signal information that is currently expected. */
-  void javaSignalHandler_kbeShim(unsigned cause, __u64 fault_vaddr, __u64 gregs[NUM_INT_REGS]) {
+  __u64 javaSignalHandler_kbeShim(unsigned cause, __u64 fault_vaddr, __u64 gregs[NUM_INT_REGS]) {
     siginfo_t fake_siginfo = {0};
     fake_siginfo.si_code = cause;
 
@@ -528,7 +528,9 @@ extern "C" {
         .kind = kind,
         .fault_vaddr = page_fault_vaddr,
     };
+
     int rc = ioctl(kbe_fd, KERNEL_BYPASS_HANDLE_PAGE_FAULT, &req);
+    return gregs[REG_PC];
   };
 
   void os::Linux::set_kbe_handler(int sig) {
